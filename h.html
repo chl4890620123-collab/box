@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Carrot Town - Smart Warehouse</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #ff8a3d; 
+            --primary-light: #ff8a3d15; 
+            --bg: #f8fafc; 
+            --text: #0f172a; 
+            --gray: #94a3b8; 
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * { 
+            box-sizing: border-box; 
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; 
+            margin: 0; padding: 0; 
+            -webkit-tap-highlight-color: transparent; 
+            -webkit-text-size-adjust: none;
+        }
+
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            padding-bottom: calc(90px + var(--safe-bottom)); 
+            min-height: 100vh;
+            line-height: 1.5;
+            word-break: keep-all;
+        }
+        
+        nav { 
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            width: 100%; padding: 16px 20px; 
+            position: sticky; top: 0; 
+            display: flex; justify-content: space-between; align-items: center; 
+            z-index: 1000; border-bottom: 1px solid #f1f5f9; 
+        }
+        .logo { font-weight: 800; color: var(--primary); font-size: 1.2rem; cursor: pointer; letter-spacing: -0.5px; }
+        #userLabel { font-size: 0.8rem; font-weight: 600; color: #475569; background: var(--primary-light); padding: 5px 12px; border-radius: 20px; }
+
+        .container { width: 100%; max-width: 500px; margin: 0 auto; padding: 16px; }
+        .card { background: white; border-radius: 24px; padding: 24px; margin-bottom: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
+        
+        .category-scroll {
+            display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 5px;
+            -ms-overflow-style: none; scrollbar-width: none;
+        }
+        .category-scroll::-webkit-scrollbar { display: none; }
+        .cat-chip {
+            white-space: nowrap; padding: 8px 16px; background: #f1f5f9; border-radius: 20px;
+            font-size: 0.85rem; color: #64748b; cursor: pointer; transition: 0.2s;
+        }
+        .cat-chip.active { background: var(--primary); color: white; font-weight: 600; }
+
+        .my-room-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+        .room-slot { 
+            aspect-ratio: 1 / 1; background: #f8fafc; border-radius: 16px; overflow: hidden; 
+            border: 2px dashed #e2e8f0; display: flex; align-items: center; justify-content: center; 
+            font-size: 1.5rem; color: #cbd5e1; cursor: pointer; position: relative; 
+        }
+        .room-slot.filled { border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .room-slot img { width: 100%; height: 100%; object-fit: cover; }
+        .room-slot .badge {
+            position: absolute; top: 5px; right: 5px; background: #ef4444; color: white; 
+            font-size: 0.6rem; padding: 2px 6px; border-radius: 10px; font-weight: bold;
+        }
+        
+        .trade-menu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; border-top: 1px solid #f1f5f9; padding-top: 15px; }
+        .trade-btn { 
+            padding: 14px 8px; border-radius: 14px; border: 1px solid #e2e8f0; background: white; 
+            font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; gap: 4px; 
+        }
+
+        input, select { width: 100%; padding: 14px; margin: 8px 0; border: 1.5px solid #e2e8f0; border-radius: 14px; font-size: 1rem; background: white;}
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 16px; font-weight: 700; cursor: pointer; font-size: 1rem; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #f1f5f9; color: #475569; }
+        .btn-danger { background: #fff1f2; color: #e11d48; }
+
+        .bottom-nav { 
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); 
+            width: 100%; max-width: 500px; background: rgba(255,255,255,0.95); backdrop-filter: blur(15px); 
+            display: flex; justify-content: space-around; padding: 12px 10px calc(12px + var(--safe-bottom)); 
+            border-top: 1px solid #f1f5f9; z-index: 1000; 
+        }
+        .bottom-nav button { background: none; border: none; font-size: 0.7rem; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; font-weight: 600; }
+        .bottom-nav button.active { color: var(--primary); }
+        .nav-icon { font-size: 1.4rem; }
+        
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<nav id="topNav" class="hidden">
+    <div class="logo" onclick="showPage('roomPage')">🥕 당근 마을</div>
+    <div id="userLabel"></div>
+</nav>
+
+<div class="container">
+    <div id="authSection">
+        <div id="loginPage" class="card fade-in">
+            <h2 style="margin-bottom:10px;">반가워요! 👋</h2>
+            <input type="text" id="loginId" placeholder="아이디">
+            <input type="password" id="loginPw" placeholder="비밀번호">
+            <button class="btn btn-primary" onclick="handleLogin()">시작하기</button>
+            <p onclick="showAuthPage('joinPage')" style="text-align:center; margin-top:20px; font-size:0.9rem; color:var(--gray); cursor:pointer;">회원가입</p>
+        </div>
+        <div id="joinPage" class="card hidden fade-in">
+            <h2>주민 등록 🏘️</h2>
+            <input type="text" id="joinId" placeholder="아이디">
+            <input type="text" id="joinNick" placeholder="닉네임">
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="joinTown" placeholder="동네 위치" readonly>
+                <button class="btn btn-secondary" style="width:100px; padding:0; font-size:0.85rem;" onclick="getLocation('joinTown')">📍 위치찾기</button>
+            </div>
+            <input type="password" id="joinPw" placeholder="비밀번호">
+            <button class="btn btn-primary" onclick="handleJoin()">가입 완료</button>
+        </div>
+    </div>
+
+    <div id="roomPage" class="page hidden fade-in">
+        <div class="card">
+            <h3 style="margin-bottom:15px;">🏠 <span id="roomNick"></span>님의 보관함</h3>
+            <div class="category-scroll" id="catFilter"></div>
+            <div class="my-room-grid" id="myRoomGrid"></div>
+            <button class="btn btn-secondary" style="margin-top:20px;" onclick="expandStorage()">🔨 공간 확장하기 (+3칸)</button>
+        </div>
+
+        <div id="roomDetail" class="card hidden fade-in">
+            <h3 style="margin-bottom:15px;">📦 물건 정보</h3>
+            <div id="detailContent" style="margin-bottom:15px;"></div>
+            <div class="trade-menu">
+                <button class="trade-btn" onclick="tradeAction('donate')"><span>🎁</span>기부</button>
+                <button class="trade-btn" onclick="tradeAction('sell')"><span>💰</span>판매</button>
+                <button class="trade-btn" onclick="tradeAction('share')"><span>🤝</span>나눔</button>
+                <button class="trade-btn" onclick="tradeAction('discard')"><span>🗑️</span>폐기</button>
+            </div>
+            <button class="btn btn-danger" style="margin-top:20px;" onclick="deleteSelectedItem()">삭제</button>
+            <button class="btn btn-secondary" style="margin-top:8px;" onclick="document.getElementById('roomDetail').classList.add('hidden')">닫기</button>
+        </div>
+    </div>
+
+    <div id="regPage" class="page hidden fade-in">
+        <div class="card">
+            <h2 style="margin-bottom:20px;">물건 등록 ➕</h2>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button class="btn btn-secondary" style="flex:1;" onclick="initCamera()">📸 촬영</button>
+                <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('fileInput').click()">📁 갤러리</button>
+            </div>
+            <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="handleFileUpload(this)">
+            <div id="cameraContainer" class="hidden">
+                <video id="video" autoplay playsinline style="width:100%; border-radius:18px; margin-bottom:10px; background:#000;"></video>
+                <button class="btn btn-primary" onclick="takePhoto()">찰칵!</button>
+            </div>
+            <img id="imgPreview" class="hidden" style="width:100%; height:200px; object-fit:cover; border-radius:18px; margin-bottom:15px;">
+            
+            <input type="text" id="itemName" placeholder="물건 이름">
+            <div style="display:flex; gap:8px;">
+                <select id="itemCat" style="flex:2; margin:0;"></select>
+                <button class="btn btn-secondary" style="flex:1; padding:0; font-size:0.8rem;" onclick="addNewCategory()">+ 카테고리</button>
+            </div>
+            <input type="text" id="itemLoc" placeholder="보관 상세 위치">
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <input type="hidden" id="qrInput">
+                <button class="btn btn-secondary" style="width:100%; margin-bottom:10px;" onclick="generateUniqueQR()">QR 코드 생성</button>
+                <div id="qrResult" style="display:flex; justify-content:center; align-items:center; background:#f8fafc; border-radius:18px; min-height:160px; border: 1px dashed var(--gray); margin-bottom:10px;">
+                    <p id="qrPlaceholder" style="font-size:0.8rem; color:var(--gray);">생성 버튼을 눌러주세요</p>
+                </div>
+                <button id="qrDownBtn" class="btn btn-secondary hidden" style="padding:10px; font-size:0.8rem;" onclick="downloadQR()">⬇️ QR 이미지 저장</button>
+            </div>
+            
+            <button class="btn btn-primary" style="margin-top:20px;" onclick="submitItem()">보관 시작</button>
+        </div>
+    </div>
+
+    <div id="scanPage" class="page hidden fade-in">
+        <div class="card">
+            <h2 style="margin-bottom:20px;">QR 코드 찾기 🔍</h2>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button class="btn btn-primary" style="flex:1;" onclick="startScanner()">📷 실시간 스캔</button>
+                <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('scanFileInput').click()">🖼️ 이미지 불러오기</button>
+            </div>
+            <input type="file" id="scanFileInput" class="hidden" accept="image/*" onchange="scanQRFromFile(this)">
+            
+            <div id="reader" style="width:100%; border-radius:18px; overflow:hidden; border:1px solid #eee;"></div>
+            <div id="scanResultInfo" class="hidden" style="margin-top:20px; padding:20px; background:#f8fafc; border-radius:18px; border:1px solid #e2e8f0;"></div>
+        </div>
+    </div>
+
+    <div id="profilePage" class="page hidden fade-in">
+        <div class="card">
+            <h3>⚙️ 설정</h3>
+            <input type="text" id="editNick" placeholder="닉네임 수정">
+            <button class="btn btn-primary" onclick="updateProfile()">정보 수정</button>
+            <button class="btn btn-secondary" style="margin-top:12px;" onclick="location.reload()">로그아웃</button>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-nav hidden" id="bottomNav">
+    <button onclick="showPage('roomPage')" id="nav-roomPage"><span class="nav-icon">🏠</span><span>홈</span></button>
+    <button onclick="showPage('regPage')" id="nav-regPage"><span class="nav-icon">➕</span><span>등록</span></button>
+    <button onclick="showPage('scanPage')" id="nav-scanPage"><span class="nav-icon">🔍</span><span>찾기</span></button>
+    <button onclick="showPage('profilePage')" id="nav-profilePage"><span class="nav-icon">⚙️</span><span>설정</span></button>
+</div>
+
+<script>
+    const STORAGE_USERS = 'carrot_users_v23';
+    const STORAGE_ITEMS = 'carrot_items_v23';
+    const STORAGE_CATS = 'carrot_cats_v23';
+
+    let users = JSON.parse(localStorage.getItem(STORAGE_USERS)) || [];
+    let items = JSON.parse(localStorage.getItem(STORAGE_ITEMS)) || [];
+    let categories = JSON.parse(localStorage.getItem(STORAGE_CATS)) || ['의류', '가전', '생활', '기타'];
+    
+    let currentUser = null;
+    let selectedItemId = null;
+    let currentFilter = '전체'; // 필터 상태 추적
+    let html5QrCode = null;
+    let capturedImg = null;
+    let videoStream = null;
+
+    // [필터 변경 및 렌더링]
+    function filterByCat(cat) {
+        currentFilter = cat;
+        updateCategoryUI();
+        renderRoom();
+    }
+
+    function updateCategoryUI() {
+        const select = document.getElementById('itemCat');
+        if(select) select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        
+        const filterWrap = document.getElementById('catFilter');
+        if(!filterWrap) return;
+        
+        let chips = [`<div class="cat-chip ${currentFilter === '전체' ? 'active' : ''}" onclick="filterByCat('전체')">전체</div>`];
+        categories.forEach(c => {
+            chips.push(`<div class="cat-chip ${currentFilter === c ? 'active' : ''}" onclick="filterByCat('${c}')">${c}</div>`);
+        });
+        filterWrap.innerHTML = chips.join('');
+    }
+
+    function renderRoom() {
+        if(!currentUser) return;
+        document.getElementById('roomNick').innerText = currentUser.nick;
+        const grid = document.getElementById('myRoomGrid');
+        
+        // 1. 내 물건 필터링
+        let userItems = items.filter(i => i.uid === currentUser.id);
+        
+        // 2. 카테고리 필터링 (동작 핵심)
+        let filtered = userItems;
+        if(currentFilter !== '전체') {
+            filtered = userItems.filter(i => i.cat === currentFilter);
+        }
+
+        grid.innerHTML = '';
+        const totalSlots = Math.max(currentUser.slots || 9, filtered.length);
+        for(let i=0; i < totalSlots; i++) {
+            const item = filtered[i];
+            grid.innerHTML += `<div class="room-slot ${item ? 'filled' : ''}" onclick="${item ? `showItemDetail(${item.id})` : "showPage('regPage')" }">${item ? `<img src="${item.img}">` : '+'}</div>`;
+        }
+    }
+
+    // [기존 QR 및 카메라 로직 유지]
+    function generateUniqueQR() {
+        const qrInput = document.getElementById('qrInput');
+        const qrResult = document.getElementById('qrResult');
+        const downBtn = document.getElementById('qrDownBtn');
+        let newCode = "DG-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+        qrInput.value = newCode;
+        qrResult.innerHTML = ""; 
+        new QRCode(qrResult, { text: newCode, width: 140, height: 140, colorDark : "#ff8a3d", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
+        downBtn.classList.remove('hidden');
+    }
+
+    function downloadQR() {
+        const img = document.querySelector('#qrResult img');
+        if(!img) return alert("QR을 생성해주세요.");
+        const link = document.createElement('a');
+        link.href = img.src;
+        link.download = `qr_${Date.now()}.png`;
+        link.click();
+    }
+
+    function scanQRFromFile(input) {
+        if (!input.files || input.files.length === 0) return;
+        const html5QrCodeFile = new Html5Qrcode("reader");
+        html5QrCodeFile.scanFile(input.files[0], true)
+            .then(handleScanSuccess)
+            .catch(() => alert("QR을 찾을 수 없습니다."));
+    }
+
+    function handleScanSuccess(txt) {
+        const item = items.find(i => String(i.qr) === String(txt));
+        const res = document.getElementById('scanResultInfo');
+        res.classList.remove('hidden');
+        if(item) {
+            res.innerHTML = `<h3>✨ 찾았습니다!</h3><p>이름: ${item.name}</p><p>위치: ${item.loc}</p><button class="btn btn-secondary" style="margin-top:10px" onclick="showItemDetail(${item.id})">상세보기</button>`;
+        } else {
+            res.innerHTML = `<p>미등록 코드: <b>${txt}</b></p>`;
+        }
+    }
+
+    function handleLogin() {
+        const id = document.getElementById('loginId').value;
+        const pw = document.getElementById('loginPw').value;
+        const u = users.find(x => x.id === id && x.pw === pw);
+        if(u) {
+            currentUser = u;
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('topNav').classList.remove('hidden');
+            document.getElementById('bottomNav').classList.remove('hidden');
+            document.getElementById('userLabel').innerText = `${u.nick} @ ${u.town}`;
+            updateCategoryUI();
+            showPage('roomPage');
+        } else alert('정보를 확인해주세요.');
+    }
+
+    function handleJoin() {
+        const id = document.getElementById('joinId').value;
+        const nick = document.getElementById('joinNick').value;
+        const town = document.getElementById('joinTown').value;
+        const pw = document.getElementById('joinPw').value;
+        if(!id || !nick || !pw) return alert('필수 입력!');
+        users.push({ id, nick, town, pw, slots: 9 });
+        localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+        alert('가입 완료!'); showAuthPage('loginPage');
+    }
+
+    function showPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+        document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+        const navBtn = document.getElementById('nav-'+id);
+        if(navBtn) navBtn.classList.add('active');
+        stopScanner(); stopCamera();
+        if(id === 'roomPage' && currentUser) renderRoom();
+    }
+
+    async function initCamera() {
+        try {
+            videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            document.getElementById('video').srcObject = videoStream;
+            document.getElementById('cameraContainer').classList.remove('hidden');
+        } catch(e) { alert("카메라 접근 불가"); }
+    }
+
+    function takePhoto() {
+        const v = document.getElementById('video');
+        const c = document.createElement('canvas');
+        c.width = v.videoWidth; c.height = v.videoHeight;
+        c.getContext('2d').drawImage(v, 0, 0);
+        capturedImg = c.toDataURL('image/jpeg');
+        document.getElementById('imgPreview').src = capturedImg;
+        document.getElementById('imgPreview').classList.remove('hidden');
+        document.getElementById('cameraContainer').classList.add('hidden');
+        stopCamera();
+    }
+
+    function stopCamera() { if(videoStream) videoStream.getTracks().forEach(t => t.stop()); }
+
+    function handleFileUpload(el) {
+        if(!el.files[0]) return;
+        const r = new FileReader();
+        r.onload = e => {
+            capturedImg = e.target.result;
+            document.getElementById('imgPreview').src = e.target.result;
+            document.getElementById('imgPreview').classList.remove('hidden');
+        };
+        r.readAsDataURL(el.files[0]);
+    }
+
+    function submitItem() {
+        const name = document.getElementById('itemName').value;
+        const qr = document.getElementById('qrInput').value;
+        if(!name || !qr) return alert('물건 이름과 QR 코드 생성이 필요합니다.');
+        items.push({ 
+            id: Date.now(), uid: currentUser.id, name, 
+            cat: document.getElementById('itemCat').value, 
+            loc: document.getElementById('itemLoc').value, qr, 
+            img: capturedImg || 'https://via.placeholder.com/150' 
+        });
+        localStorage.setItem(STORAGE_ITEMS, JSON.stringify(items));
+        alert('등록 완료!');
+        document.getElementById('qrDownBtn').classList.add('hidden');
+        showPage('roomPage');
+    }
+
+    function showItemDetail(id) {
+        const item = items.find(i => i.id === id);
+        if(!item) return;
+        selectedItemId = id;
+        document.getElementById('detailContent').innerHTML = `
+            <img src="${item.img}" style="width:100%; height:180px; object-fit:cover; border-radius:18px; margin-bottom:15px;">
+            <div style="background:#f8fafc; padding:15px; border-radius:14px; font-size:0.9rem;">
+                <p><b>물건명:</b> ${item.name}</p>
+                <p><b>카테고리:</b> ${item.cat}</p>
+                <p><b>번호:</b> ${item.qr}</p>
+                <p><b>위치:</b> ${item.loc}</p>
+            </div>
+        `;
+        document.getElementById('roomDetail').classList.remove('hidden');
+    }
+
+    function startScanner() {
+        if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+        document.getElementById('reader').classList.remove('hidden');
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, handleScanSuccess).catch(()=>{});
+    }
+
+    function stopScanner() { if(html5QrCode) html5QrCode.stop().catch(()=>{}); }
+
+    function addNewCategory() {
+        const n = prompt("새 카테고리:");
+        if(n) { categories.push(n); updateCategoryUI(); localStorage.setItem(STORAGE_CATS, JSON.stringify(categories));}
+    }
+
+    function deleteSelectedItem() {
+        items = items.filter(i => i.id !== selectedItemId);
+        localStorage.setItem(STORAGE_ITEMS, JSON.stringify(items));
+        document.getElementById('roomDetail').classList.add('hidden');
+        renderRoom();
+    }
+
+    async function getLocation(targetId) {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            document.getElementById(targetId).value = "위치 확인됨";
+        });
+    }
+
+    function showAuthPage(id) {
+        document.getElementById('loginPage').classList.toggle('hidden', id !== 'loginPage');
+        document.getElementById('joinPage').classList.toggle('hidden', id !== 'joinPage');
+    }
+    
+    function expandStorage() {
+        currentUser.slots = (currentUser.slots || 9) + 3;
+        localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+        renderRoom();
+    }
+
+    function tradeAction(type) { window.open('https://www.daangn.com/'); }
+</script>
+</body>
+</html>
